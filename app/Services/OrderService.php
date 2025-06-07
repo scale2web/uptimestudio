@@ -30,12 +30,14 @@ class OrderService
         ?Currency $currency = null,
         ?array $orderItems = [],
         $paymentProviderOrderId = null,
+        bool $isLocal = false,
     ): Order {
         $orderAttributes = [
             'uuid' => (string) Str::uuid(),
             'user_id' => $user->id,
             'status' => OrderStatus::NEW->value,
             'total_amount' => $totalAmount ?? 0,
+            'is_local' => $isLocal,
         ];
 
         if ($paymentProvider) {
@@ -58,10 +60,19 @@ class OrderService
             $orderAttributes['payment_provider_order_id'] = $paymentProviderOrderId;
         }
 
+        if ($isLocal) {
+            $orderAttributes['status'] = OrderStatus::SUCCESS->value; // Local orders are considered successful immediately
+        }
+
         $order = Order::create($orderAttributes);
 
         if ($orderItems) {
             $order->items()->createMany($orderItems);
+        }
+
+        if ($isLocal) {
+            // if it's a local order, dispatch the Ordered event immediately
+            Ordered::dispatch($order);
         }
 
         return $order;
@@ -227,5 +238,23 @@ class OrderService
         }
 
         return array_values($orderedProducts);
+    }
+
+    public function getUserOrderedProductsMetadata(?User $user): array
+    {
+        if (! $user) {
+            return [];
+        }
+
+        $orders = $user->orders()
+            ->where('status', OrderStatus::SUCCESS)
+            ->with(['items.oneTimeProduct'])
+            ->get();
+
+        return $orders->flatMap(function (Order $order) {
+            return $order->items->mapWithKeys(function ($item) {
+                return [$item->oneTimeProduct->slug => $item->oneTimeProduct->metadata];
+            });
+        })->toArray();
     }
 }
