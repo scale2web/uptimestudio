@@ -148,7 +148,9 @@ class SubscriptionResource extends Resource
                                 return \App\Models\User::query()
                                     ->where('name', 'like', '%'.$query.'%')
                                     ->orWhere('email', 'like', '%'.$query.'%')
-                                    ->limit(20)->pluck('name', 'id')->toArray();
+                                    ->limit(20)
+                                    ->get()
+                                    ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} <{$user->email}>"])->toArray();
                             })
                             ->helperText(__('Adding a subscription to a user will create a "locally managed" subscription, which means the user will be able to use subscription features without being billed, and they can later convert to a "payment provider managed" subscription from their dashboard.'))
                             ->required(),
