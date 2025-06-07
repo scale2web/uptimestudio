@@ -20,6 +20,13 @@ class OneTimeProductService
         return OneTimeProduct::findOrFail($id);
     }
 
+    public function getActiveOneTimeProductById(?int $id): OneTimeProduct
+    {
+        return OneTimeProduct::where('id', $id)
+            ->where('is_active', true)
+            ->firstOrFail();
+    }
+
     public function findByPaymentProviderProductId(PaymentProvider $paymentProvider, string $paymentProviderProductId): ?OneTimeProduct
     {
         $result = OneTimeProductPaymentProviderData::where('payment_provider_id', $paymentProvider->id)

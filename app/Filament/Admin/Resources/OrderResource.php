@@ -7,10 +7,20 @@ use App\Filament\Admin\Resources\OrderResource\Pages;
 use App\Filament\Admin\Resources\TenantResource\Pages\EditTenant;
 use App\Mapper\OrderStatusMapper;
 use App\Models\Order;
+use App\Models\User;
+use App\Services\CurrencyService;
+use App\Services\OneTimeProductService;
+use App\Services\OrderService;
+use App\Services\TenantCreationService;
+use App\Services\TenantService;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -61,6 +71,11 @@ class OrderResource extends Resource
                     })
                     ->label(__('Payment Provider'))
                     ->searchable(),
+                Tables\Columns\IconColumn::make('is_local')
+                    ->label(__('Is Local Order (Manual)'))
+                    ->toggleable()
+                    ->toggledHiddenByDefault()
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('updated_at')->label(__('Updated At'))
                     ->dateTime(config('app.datetime_format'))
                     ->searchable()->sortable(),
@@ -77,6 +92,98 @@ class OrderResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
             ])
+            ->headerActions([
+                Tables\Actions\Action::make('create')
+                    ->label(__('Create Order'))
+                    ->form([
+                        Select::make('user_id')
+                            ->searchable()
+                            ->getSearchResultsUsing(function (string $query) {
+                                return User::query()
+                                    ->where('name', 'like', '%'.$query.'%')
+                                    ->orWhere('email', 'like', '%'.$query.'%')
+                                    ->limit(20)
+                                    ->get()
+                                    ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} <{$user->email}>"])->toArray();
+                            })
+                            ->helperText(__('Adding an order manually to a user will add a zero amount order to the user\'s account, and user will be able to have access to any parts of your application that require a user to have ordered that product.'))
+                            ->live()
+                            ->label(__('User'))
+                            ->required(),
+                        Select::make('tenant_uuid')
+                            ->label(__('Tenant'))
+                            ->helperText(__('Select the tenant for which you want to create a order. If the user has multiple tenants, you can select one of them. If you do not select a tenant, a new tenant will be created for the user.'))
+                            ->options(function (Get $get, TenantCreationService $tenantCreationService) {
+                                $userId = $get('user_id');
+                                if (! $userId) {
+                                    return [];
+                                }
+
+                                return $tenantCreationService->findUserTenantsForNewOrder(User::find($userId))
+                                    ->pluck('name', 'uuid')
+                                    ->toArray();
+                            }),
+                        Select::make('one_time_product_id')
+                            ->label(__('Product'))
+                            ->options(function (OneTimeProductService $productService) {
+                                return $productService->getAllProductsWithPrices()->mapWithKeys(function ($product) {
+                                    return [$product->id => $product->name];
+                                });
+                            })
+                            ->required(),
+                        TextInput::make('quantity')
+                            ->numeric()
+                            ->default(1)
+                            ->minValue(1)
+                            ->required()
+                            ->label(__('Quantity')),
+                    ])
+                    ->action(function (
+                        array $data,
+                        OrderService $orderService,
+                        OneTimeProductService $oneTimeProductService,
+                        CurrencyService $currencyService,
+                        TenantCreationService $tenantCreationService,
+                        TenantService $tenantService,
+                    ) {
+                        $user = User::find($data['user_id']);
+                        $product = $oneTimeProductService->getActiveOneTimeProductById($data['one_time_product_id']);
+                        $orderItem = [
+                            'one_time_product_id' => $product->id,
+                            'quantity' => $data['quantity'],
+                            'price_per_unit' => 0,
+                        ];
+
+                        $selectedTenantUuid = $data['tenant_uuid'] ?? null;
+
+                        if ($selectedTenantUuid !== null) {
+                            $tenant = $tenantService->getTenantByUuid($selectedTenantUuid);
+                            if (! $tenant) {
+                                Notification::make()
+                                    ->title(__('Selected tenant not found.'))
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+                        } else {
+                            $tenant = $tenantCreationService->createTenant($user);
+                        }
+
+                        $orderService->create(
+                            user: $user,
+                            tenant: $tenant,
+                            currency: $currencyService->getCurrency(),
+                            orderItems: [$orderItem],
+                            isLocal: true,
+                        );
+
+                        Notification::make()
+                            ->title(__('Order created successfully.'))
+                            ->success()
+                            ->send();
+                    }),
+            ])
             ->bulkActions([
 
             ]);
@@ -86,7 +193,7 @@ class OrderResource extends Resource
     {
         return $infolist
             ->schema([
-                \Filament\Infolists\Components\Tabs::make('Subscription')
+                \Filament\Infolists\Components\Tabs::make('Order')
                     ->columnSpan('full')
                     ->tabs([
                         \Filament\Infolists\Components\Tabs\Tab::make(__('Details'))
@@ -128,6 +235,12 @@ class OrderResource extends Resource
 
                                                 return money($state, $record->discounts[0]->code);
                                             })->label(__('Discount Amount')),
+                                        TextEntry::make('is_local')
+                                            ->badge()
+                                            ->formatStateUsing(function (string $state, $record) {
+                                                return $state ? __('Yes') : __('No');
+                                            })
+                                            ->label(__('Is Local Order (Manual)')),
                                         TextEntry::make('created_at')->dateTime(config('app.datetime_format')),
                                         TextEntry::make('updated_at')->dateTime(config('app.datetime_format')),
                                     ])->columns(3),
