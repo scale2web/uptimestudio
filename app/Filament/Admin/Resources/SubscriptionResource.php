@@ -17,6 +17,7 @@ use App\Services\CurrencyService;
 use App\Services\PlanService;
 use App\Services\SubscriptionService;
 use App\Services\TenantCreationService;
+use App\Services\TenantService;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -153,7 +154,21 @@ class SubscriptionResource extends Resource
                                     ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} <{$user->email}>"])->toArray();
                             })
                             ->helperText(__('Adding a subscription to a user will create a "locally managed" subscription, which means the user will be able to use subscription features without being billed, and they can later convert to a "payment provider managed" subscription from their dashboard.'))
+                            ->live()
                             ->required(),
+                        Forms\Components\Select::make('tenant_uuid')
+                            ->label(__('Tenant'))
+                            ->helperText(__('Select the tenant for which you want to create a subscription. If the user has multiple tenants, you can select one of them. If you do not select a tenant, a new tenant will be created for the user.'))
+                            ->options(function (Forms\Get $get, TenantCreationService $tenantCreationService) {
+                                $userId = $get('user_id');
+                                if (! $userId) {
+                                    return [];
+                                }
+
+                                return $tenantCreationService->findUserTenantsForNewSubscription(User::find($userId))
+                                    ->pluck('name', 'uuid')
+                                    ->toArray();
+                            }),
                         \Filament\Forms\Components\Select::make('plan_id')
                             ->label(__('Plan'))
                             ->options(function (PlanService $planService) {
@@ -168,10 +183,30 @@ class SubscriptionResource extends Resource
                             ->helperText(__('The date when the subscription will end.'))
                             ->required(),
                     ])
-                    ->action(function (array $data, SubscriptionService $subscriptionService, PlanService $planService, TenantCreationService $tenantCreationService) {
+                    ->action(function (
+                        array $data,
+                        SubscriptionService $subscriptionService,
+                        PlanService $planService,
+                        TenantCreationService $tenantCreationService,
+                        TenantService $tenantService,
+                    ) {
                         $user = User::find($data['user_id']);
                         $plan = $planService->getActivePlanById($data['plan_id']);
-                        $tenant = $tenantCreationService->createTenant($user);
+                        $selectedTenantUuid = $data['tenant_uuid'] ?? null;
+
+                        if ($selectedTenantUuid !== null) {
+                            $tenant = $tenantService->getTenantByUuid($selectedTenantUuid);
+                            if (! $tenant) {
+                                Notification::make()
+                                    ->title(__('Selected tenant not found.'))
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+                        } else {
+                            $tenant = $tenantCreationService->createTenant($user);
+                        }
 
                         try {
                             $subscriptionService->create(

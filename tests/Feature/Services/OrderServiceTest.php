@@ -133,7 +133,8 @@ class OrderServiceTest extends FeatureTest
 
     public function test_get_user_ordered_products_metadata(): void
     {
-        $user = $this->createUser();
+        $tenant = $this->createTenant();
+        $user = $this->createUser($tenant);
         $this->actingAs($user);
 
         $product1Slug = Str::random(10);
@@ -144,6 +145,7 @@ class OrderServiceTest extends FeatureTest
 
         $order1 = Order::factory()->create([
             'user_id' => $user->id,
+            'tenant_id' => $tenant->id,
             'status' => OrderStatus::SUCCESS->value,
         ]);
 
@@ -165,6 +167,7 @@ class OrderServiceTest extends FeatureTest
 
         $order2 = Order::factory()->create([
             'user_id' => $user->id,
+            'tenant_id' => $tenant->id,
             'status' => OrderStatus::SUCCESS->value,
         ]);
 
@@ -189,7 +192,8 @@ class OrderServiceTest extends FeatureTest
 
     public function test_create()
     {
-        $user = $this->createUser();
+        $tenant = $this->createTenant();
+        $user = $this->createUser($tenant);
         $this->actingAs($user);
 
         $orderService = app()->make(OrderService::class);
@@ -202,6 +206,7 @@ class OrderServiceTest extends FeatureTest
         $currency = Currency::query()->where('code', 'USD')->first();
         $order = $orderService->create(
             $user,
+            $tenant,
             null,
             1000,
             100,
@@ -234,7 +239,8 @@ class OrderServiceTest extends FeatureTest
 
     public function test_create_local()
     {
-        $user = $this->createUser();
+        $tenant = $this->createTenant();
+        $user = $this->createUser($tenant);
         $this->actingAs($user);
 
         $orderService = app()->make(OrderService::class);
@@ -250,6 +256,7 @@ class OrderServiceTest extends FeatureTest
 
         $order = $orderService->create(
             $user,
+            $tenant,
             null,
             1000,
             100,
