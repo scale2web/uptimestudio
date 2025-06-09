@@ -67,8 +67,13 @@ class PaddleProvider implements PaymentProviderInterface
         ];
 
         if ($discount !== null) {
-            $paddleDiscountId = $this->findOrCreatePaddleDiscount($discount, $paymentProvider, $currency->code);
-            $results['paddleDiscountId'] = $paddleDiscountId;
+            // discounts should not crash the checkout even if they fail to create
+            try {
+                $paddleDiscountId = $this->findOrCreatePaddleDiscount($discount, $paymentProvider, $currency->code);
+                $results['paddleDiscountId'] = $paddleDiscountId;
+            } catch (\Exception $e) {
+                logger()->error('Failed to create paddle discount: '.$e->getMessage());
+            }
         }
 
         return $results;
@@ -202,8 +207,13 @@ class PaddleProvider implements PaymentProviderInterface
         }
 
         if ($discount !== null) {
-            $paddleDiscountId = $this->findOrCreatePaddleDiscount($discount, $paymentProvider, $currency->code);
-            $results['paddleDiscountId'] = $paddleDiscountId;
+            // discounts should not crash the checkout even if they fail to create
+            try {
+                $paddleDiscountId = $this->findOrCreatePaddleDiscount($discount, $paymentProvider, $currency->code);
+                $results['paddleDiscountId'] = $paddleDiscountId;
+            } catch (\Exception $e) {
+                logger()->error('Failed to create paddle discount: '.$e->getMessage());
+            }
         }
 
         return $results;
