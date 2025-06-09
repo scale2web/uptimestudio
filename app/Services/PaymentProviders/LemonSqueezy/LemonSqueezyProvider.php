@@ -85,7 +85,12 @@ class LemonSqueezyProvider implements PaymentProviderInterface
         }
 
         if ($discount) {
-            $object['checkout_data']['discount_code'] = $this->findOrCreateLemonSqueezyDiscount($discount, $paymentProvider);
+            // discounts should not crash the checkout even if they fail to create
+            try {
+                $object['checkout_data']['discount_code'] = $this->findOrCreateLemonSqueezyDiscount($discount, $paymentProvider);
+            } catch (\Exception $e) {
+                Log::error('Failed to create lemon-squeezy discount: '.$e->getMessage());
+            }
         }
 
         $response = $this->client->createCheckout($object, $variantId);
@@ -160,7 +165,12 @@ class LemonSqueezyProvider implements PaymentProviderInterface
         ];
 
         if ($discount) {
-            $object['checkout_data']['discount_code'] = $this->findOrCreateLemonSqueezyDiscount($discount, $paymentProvider);
+            // discounts should not crash the checkout even if they fail to create
+            try {
+                $object['checkout_data']['discount_code'] = $this->findOrCreateLemonSqueezyDiscount($discount, $paymentProvider);
+            } catch (\Exception $e) {
+                Log::error('Failed to create lemon-squeezy discount: '.$e->getMessage());
+            }
         }
 
         if ($variantId === null) {

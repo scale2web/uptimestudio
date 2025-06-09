@@ -44,6 +44,10 @@ class ConfigService
 
     public function exportAllConfigs(): void
     {
+        if (! $this->isAdminSettingsEnabled()) {
+            return;
+        }
+
         $configs = Config::getAll();
 
         foreach ($configs as $key => $value) {
