@@ -86,13 +86,18 @@ class StripeProvider implements PaymentProviderInterface
             }
 
             if ($discount !== null) {
-                $stripeDiscountId = $this->findOrCreateStripeDiscount($discount, $paymentProvider, $currencyCode);
+                // discounts should not crash the checkout even if they fail to create
+                try {
+                    $stripeDiscountId = $this->findOrCreateStripeDiscount($discount, $paymentProvider, $currencyCode);
 
-                $sessionCreationObject['discounts'] = [
-                    [
-                        'coupon' => $stripeDiscountId,
-                    ],
-                ];
+                    $sessionCreationObject['discounts'] = [
+                        [
+                            'coupon' => $stripeDiscountId,
+                        ],
+                    ];
+                } catch (ApiErrorException $e) {
+                    Log::error('Failed to create Stripe discount: '.$e->getMessage());
+                }
             }
 
             $session = $stripe->checkout->sessions->create($sessionCreationObject);
@@ -147,13 +152,18 @@ class StripeProvider implements PaymentProviderInterface
             }
 
             if ($discount !== null) {  // rethink about that when adding support for cart checkout (multiple products checkout) as this discount will be applied to the whole cart (to all products)
-                $stripeDiscountId = $this->findOrCreateStripeDiscount($discount, $paymentProvider, $order->currency()->firstOrFail()->code);
+                // discounts should not crash the checkout even if they fail to create
+                try {
+                    $stripeDiscountId = $this->findOrCreateStripeDiscount($discount, $paymentProvider, $order->currency()->firstOrFail()->code);
 
-                $sessionCreationObject['discounts'] = [
-                    [
-                        'coupon' => $stripeDiscountId,
-                    ],
-                ];
+                    $sessionCreationObject['discounts'] = [
+                        [
+                            'coupon' => $stripeDiscountId,
+                        ],
+                    ];
+                } catch (ApiErrorException $e) {
+                    Log::error('Failed to create Stripe discount: '.$e->getMessage());
+                }
             }
 
             $session = $stripe->checkout->sessions->create($sessionCreationObject);

@@ -97,6 +97,7 @@ class OrderResource extends Resource
                     ->label(__('Create Order'))
                     ->form([
                         Select::make('user_id')
+                            ->label(__('User'))
                             ->searchable()
                             ->getSearchResultsUsing(function (string $query) {
                                 return User::query()
