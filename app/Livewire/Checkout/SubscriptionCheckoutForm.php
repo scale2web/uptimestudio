@@ -132,13 +132,17 @@ class SubscriptionCheckoutForm extends CheckoutForm
             return redirect()->away($link);
         }
 
-        $this->dispatch('start-overlay-checkout',
-            paymentProvider: $paymentProvider->getSlug(),
-            initData: $initData,
-            successUrl: route('checkout.subscription.success'),
-            email: $user->email,
-            subscriptionUuid: $subscription->uuid,
-        );
+        if ($paymentProvider->isOverlayProvider()) {
+            $this->dispatch('start-overlay-checkout',
+                paymentProvider: $paymentProvider->getSlug(),
+                initData: $initData,
+                successUrl: route('checkout.subscription.success'),
+                email: $user->email,
+                subscriptionUuid: $subscription->uuid,
+            );
+        }
+
+        return redirect()->route('checkout.subscription.success');
     }
 
     protected function getPaymentProviders(PaymentService $paymentService, bool $shouldSupportSkippingTrial = false)

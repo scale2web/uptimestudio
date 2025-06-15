@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Constants\OrderStatus;
+use App\Constants\PaymentProviderConstants;
 use App\Dto\CartDto;
 use App\Events\Order\Ordered;
-use App\Events\Order\OrderedRefunded;
+use App\Events\Order\OrderedOffline;
+use App\Events\Order\OrderRefunded;
 use App\Exceptions\TenantException;
 use App\Models\Currency;
 use App\Models\OneTimeProduct;
@@ -125,9 +127,14 @@ class OrderService
                     Ordered::dispatch($order);
                     break;
                 case OrderStatus::REFUNDED->value:
-                    OrderedRefunded::dispatch($order);
+                    OrderRefunded::dispatch($order);
                     break;
             }
+        }
+
+        if ($newStatus == OrderStatus::PENDING->value && $order->is_local && $order->paymentProvider->slug === PaymentProviderConstants::OFFLINE_SLUG) {
+            // If the order is pending and it's an offline order, dispatch OrderedOffline event - (you can use this to let the user know that they need to pay offline)
+            OrderedOffline::dispatch($order);
         }
     }
 
@@ -303,5 +310,10 @@ class OrderService
                 return [$item->oneTimeProduct->slug => $item->oneTimeProduct->metadata];
             });
         })->toArray();
+    }
+
+    public function canUpdateOrder(Order $order): bool
+    {
+        return $order->is_local;
     }
 }
