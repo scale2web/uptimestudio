@@ -8,6 +8,7 @@ use App\Constants\SubscriptionStatus;
 use App\Constants\SubscriptionType;
 use App\Events\Subscription\InvoicePaymentFailed;
 use App\Events\Subscription\Subscribed;
+use App\Events\Subscription\SubscribedOffline;
 use App\Events\Subscription\SubscriptionCancelled;
 use App\Events\Subscription\SubscriptionRenewed;
 use App\Exceptions\CouldNotCreateLocalSubscriptionException;
@@ -301,6 +302,11 @@ class SubscriptionService
         // if $newEndsAt > $oldEndsAt, then subscription is renewed
         if ($newEndsAt && $oldEndsAt && $newEndsAt->greaterThan($oldEndsAt)) {
             SubscriptionRenewed::dispatch($subscription, $oldEndsAt, $newEndsAt);
+        }
+
+        if ($newStatus == SubscriptionStatus::PENDING->value && $this->isLocalSubscription($subscription) && $subscription->paymentProvider->slug === PaymentProviderConstants::OFFLINE_SLUG) {
+            // If the subscription is pending and it's an offline order, dispatch SubscribedOffline event (you can use this to let the user know that they need to pay offline)
+            SubscribedOffline::dispatch($subscription);
         }
     }
 
