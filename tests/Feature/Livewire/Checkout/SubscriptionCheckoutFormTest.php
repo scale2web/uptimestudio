@@ -432,7 +432,7 @@ class SubscriptionCheckoutFormTest extends FeatureTest
             ->andReturn('Paymore Offline');
 
         $mock->shouldReceive('isOverlayProvider')
-            ->andReturn(true);
+            ->andReturn(false);
 
         $this->app->instance(PaymentProviderInterface::class, $mock);
 
