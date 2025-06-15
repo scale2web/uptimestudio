@@ -131,7 +131,7 @@ class SubscriptionCheckoutForm extends CheckoutForm
         }
 
         if ($paymentProvider->isOverlayProvider()) {
-            $this->dispatch('start-overlay-checkout',
+            return $this->dispatch('start-overlay-checkout',
                 paymentProvider: $paymentProvider->getSlug(),
                 initData: $initData,
                 successUrl: route('checkout.subscription.success'),
