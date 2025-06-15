@@ -134,6 +134,6 @@ class OfflineProvider implements PaymentProviderInterface
 
     public function supportsSkippingTrial(): bool
     {
-        return true;
+        return false;
     }
 }

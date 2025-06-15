@@ -240,6 +240,11 @@ class SubscriptionService
         return $subscription->type === SubscriptionType::LOCALLY_MANAGED;
     }
 
+    public function isIncompleteSubscription(Subscription $subscription): bool
+    {
+        return $this->isLocalSubscription($subscription) && $subscription->paymentProvider === null;
+    }
+
     public function shouldSkipTrial(Subscription $subscription)
     {
         if ($this->isLocalSubscription($subscription) && $subscription->plan->has_trial) {
@@ -580,6 +585,7 @@ class SubscriptionService
     {
         return Subscription::where('type', SubscriptionType::LOCALLY_MANAGED)
             ->where('status', SubscriptionStatus::ACTIVE->value)
+            ->where('payment_provider_id', null)
             // on that exact day
             ->whereDate('ends_at', Carbon::now()->addDays($days)->toDateString())
             ->get();
