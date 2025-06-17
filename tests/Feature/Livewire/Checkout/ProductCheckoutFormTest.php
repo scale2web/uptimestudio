@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Livewire\Checkout;
 
+use App\Constants\OrderStatus;
 use App\Dto\CartDto;
 use App\Dto\CartItemDto;
 use App\Livewire\Checkout\ProductCheckoutForm;
@@ -159,6 +160,41 @@ class ProductCheckoutFormTest extends FeatureTest
         });
     }
 
+    private function addOfflinePaymentProvider()
+    {
+        // find or create payment provider
+        PaymentProvider::updateOrCreate([
+            'slug' => 'paymore-offline',
+        ], [
+            'name' => 'Paymore Offline',
+            'is_active' => true,
+            'type' => 'any',
+        ]);
+
+        $mock = Mockery::mock(PaymentProviderInterface::class);
+        $mock->shouldReceive('initProductCheckout')
+            ->once()
+            ->andReturn([]);
+
+        $mock->shouldReceive('isRedirectProvider')
+            ->andReturn(false);
+
+        $mock->shouldReceive('getSlug')
+            ->andReturn('paymore-offline');
+
+        $mock->shouldReceive('getName')
+            ->andReturn('Paymore Offline');
+
+        $mock->shouldReceive('isOverlayProvider')
+            ->andReturn(false);
+
+        $this->app->instance(PaymentProviderInterface::class, $mock);
+
+        $this->app->bind(PaymentService::class, function () use ($mock) {
+            return new PaymentService($mock);
+        });
+    }
+
     public function test_can_checkout_overlay_payment()
     {
         $product = OneTimeProduct::factory()->create([
@@ -198,6 +234,61 @@ class ProductCheckoutFormTest extends FeatureTest
         // assert user has been created
         $this->assertDatabaseHas('users', [
             'email' => 'something2@gmail.com',
+        ]);
+
+        // assert user is logged in
+        $this->assertAuthenticated();
+
+        // assert order has been created
+        $this->assertEquals($ordersBefore + 1, Order::count());
+    }
+
+    public function test_can_checkout_offline_payment()
+    {
+        $slug = 'product-slug-'.str()->random(5);
+        $product = OneTimeProduct::factory()->create([
+            'slug' => $slug,
+            'is_active' => true,
+        ]);
+
+        OneTimeProductPrice::create([
+            'one_time_product_id' => $product->id,
+            'currency_id' => Currency::where('code', 'USD')->first()->id,
+            'price' => 100,
+        ]);
+
+        $this->addOfflinePaymentProvider();
+
+        $this->instance(SessionService::class, Mockery::mock(SessionService::class, function (MockInterface $mock) use ($product) {
+            $cartDto = new CartDto;
+            $cartItem = new CartItemDto;
+            $cartItem->productId = $product->id;
+            $cartDto->items = [$cartItem];
+            $mock->shouldReceive('getCartDto')->andReturn($cartDto);
+
+            $mock->shouldReceive('saveCartDto');
+        }));
+
+        // get number of orders before checkout
+        $ordersBefore = Order::count();
+
+        Livewire::test(ProductCheckoutForm::class)
+            ->set('name', 'Name')
+            ->set('email', 'something3@gmail.com')
+            ->set('password', 'password')
+            ->set('paymentProvider', 'paymore-offline')
+            ->call('checkout')
+            ->assertRedirectToRoute('checkout.product.success');
+
+        // assert user has been created
+        $this->assertDatabaseHas('users', [
+            'email' => 'something3@gmail.com',
+        ]);
+
+        // assert order has been created
+        $this->assertDatabaseHas('orders', [
+            'user_id' => auth()->id(),
+            'status' => OrderStatus::PENDING->value,
         ]);
 
         // assert user is logged in

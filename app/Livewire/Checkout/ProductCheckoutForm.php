@@ -90,13 +90,17 @@ class ProductCheckoutForm extends CheckoutForm
             return redirect()->away($link);
         }
 
-        $this->dispatch('start-overlay-checkout',
-            paymentProvider: $paymentProvider->getSlug(),
-            initData: $initData,
-            successUrl: route('checkout.product.success'),
-            email: $user->email,
-            orderUuid: $order->uuid,
-        );
+        if ($paymentProvider->isOverlayProvider()) {
+            return $this->dispatch('start-overlay-checkout',
+                paymentProvider: $paymentProvider->getSlug(),
+                initData: $initData,
+                successUrl: route('checkout.product.success'),
+                email: $user->email,
+                orderUuid: $order->uuid,
+            );
+        }
+
+        return redirect()->route('checkout.product.success');
     }
 
     public function render(PaymentService $paymentService)

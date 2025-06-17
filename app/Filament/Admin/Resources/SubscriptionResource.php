@@ -380,6 +380,10 @@ class SubscriptionResource extends Resource
                                         TextEntry::make('user.name')
                                             ->url(fn (Subscription $record) => EditUser::getUrl(['record' => $record->user]))
                                             ->label(__('User')),
+                                        TextEntry::make('comments')
+                                            ->label(__('Comments'))
+                                            ->html()
+                                            ->visible(fn (Subscription $record): bool => $record->comments !== null && $record->comments !== ''),
                                     ]),
                                 Section::make(__('Discount Details'))
                                     ->hidden(fn (Subscription $record): bool => $record->discounts->isEmpty() ||
