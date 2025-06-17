@@ -21,7 +21,7 @@ class OfflineProvider implements PaymentProviderInterface
         private SubscriptionService $subscriptionService,
     ) {}
 
-    public function initSubscriptionCheckout(Plan $plan, Subscription $subscription, ?Discount $discount = null): array
+    public function initSubscriptionCheckout(Plan $plan, Subscription $subscription, ?Discount $discount = null, int $quantity = 1): array
     {
         $paymentProvider = $this->assertProviderIsActive();
 
@@ -84,7 +84,7 @@ class OfflineProvider implements PaymentProviderInterface
         return PaymentProviderConstants::OFFLINE_SLUG;
     }
 
-    public function createSubscriptionCheckoutRedirectLink(Plan $plan, Subscription $subscription, ?Discount $discount = null): string
+    public function createSubscriptionCheckoutRedirectLink(Plan $plan, Subscription $subscription, ?Discount $discount = null, int $quantity = 1): string
     {
         throw new \Exception('Not a redirect payment provider');
     }
@@ -135,5 +135,17 @@ class OfflineProvider implements PaymentProviderInterface
     public function supportsSkippingTrial(): bool
     {
         return false;
+    }
+
+    public function updateSubscriptionQuantity(Subscription $subscription, int $quantity, bool $isProrated = true): bool
+    {
+        $this->subscriptionService->updateSubscription(
+            $subscription,
+            [
+                'quantity' => $quantity,
+            ]
+        );
+
+        return true;
     }
 }
