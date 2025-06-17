@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\PaymentProviders\LemonSqueezy\LemonSqueezyProvider;
+use App\Services\PaymentProviders\Offline\OfflineProvider;
 use App\Services\PaymentProviders\Paddle\PaddleProvider;
 use App\Services\PaymentProviders\PaymentService;
 use App\Services\PaymentProviders\Stripe\StripeProvider;
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
             StripeProvider::class,
             PaddleProvider::class,
             LemonSqueezyProvider::class,
+            OfflineProvider::class,
         ], 'payment-providers');
 
         $this->app->bind(PaymentService::class, function () {

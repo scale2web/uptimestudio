@@ -242,6 +242,10 @@ class OrderResource extends Resource
                                                 return $state ? __('Yes') : __('No');
                                             })
                                             ->label(__('Is Local Order (Manual)')),
+                                        TextEntry::make('comments')
+                                            ->label(__('Comments'))
+                                            ->html()
+                                            ->visible(fn (Order $record): bool => $record->comments !== null && $record->comments !== ''),
                                         TextEntry::make('created_at')->dateTime(config('app.datetime_format')),
                                         TextEntry::make('updated_at')->dateTime(config('app.datetime_format')),
                                     ])->columns(3),

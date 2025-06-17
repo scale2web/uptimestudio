@@ -19,9 +19,9 @@ class EditPaymentProvider extends EditRecord
             \Filament\Actions\Action::make('edit-credentials')
                 ->label(__('Edit Credentials'))
                 ->color('primary')
-                ->visible(fn (ConfigService $configService) => $configService->isAdminSettingsEnabled())
+                ->visible(fn (PaymentProvider $record, ConfigService $configService) => $configService->isAdminSettingsEnabled() && PaymentProviderResource::hasPage($record->slug.'-settings'))
                 ->icon('heroicon-o-rocket-launch')
-                ->url(fn (PaymentProvider $record): string => \App\Filament\Admin\Resources\PaymentProviderResource::getUrl(
+                ->url(fn (PaymentProvider $record): string => PaymentProviderResource::getUrl(
                     $record->slug.'-settings'
                 )),
         ];

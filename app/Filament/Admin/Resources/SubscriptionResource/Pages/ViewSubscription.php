@@ -14,6 +14,7 @@ use App\Services\TenantService;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
@@ -206,6 +207,10 @@ class ViewSubscription extends ViewRecord
                             SubscriptionStatus::PAUSED->value => __('Paused'),
                         ])
                         ->required(),
+                    RichEditor::make('comments')
+                        ->label(__('Comments'))
+                        ->default($this->getRecord()->comments)
+                        ->helperText(__('Optional comments about the subscription.')),
                 ])
                 ->action(function (Subscription $subscription, SubscriptionService $subscriptionService, array $data) {
                     if (! $subscriptionService->canUpdateSubscription($subscription)) {

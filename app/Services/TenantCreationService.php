@@ -11,6 +11,15 @@ use Illuminate\Support\Str;
 
 class TenantCreationService
 {
+    private const DISALLOWED_TENANT_SUBSCRIPTION_STATUSES = [
+        SubscriptionStatus::NEW->value,
+        SubscriptionStatus::PENDING->value,
+        SubscriptionStatus::ACTIVE->value,
+        SubscriptionStatus::PAUSED->value,
+        SubscriptionStatus::PAST_DUE->value,
+        SubscriptionStatus::PENDING_USER_VERIFICATION->value,
+    ];
+
     public function __construct(
         private TenantPermissionService $tenantPermissionService,
     ) {}
@@ -45,10 +54,9 @@ class TenantCreationService
             return collect();
         }
 
-        // where doesn't have any subscriptions with status other than New
         return $this->tenantPermissionService->filterTenantsWhereUserHasPermission(
             $user->tenants()->whereDoesntHave('subscriptions', function ($query) {
-                $query->where('status', '!=', SubscriptionStatus::NEW->value);
+                $query->whereIn('status', self::DISALLOWED_TENANT_SUBSCRIPTION_STATUSES);
             })->get(),
             TenancyPermissionConstants::PERMISSION_CREATE_SUBSCRIPTIONS
         );
@@ -62,7 +70,7 @@ class TenantCreationService
 
         return $this->tenantPermissionService->filterTenantsWhereUserHasPermission(
             $user->tenants()->whereDoesntHave('subscriptions', function ($query) {
-                $query->where('status', '!=', SubscriptionStatus::NEW->value);
+                $query->whereIn('status', $query->whereIn('status', self::DISALLOWED_TENANT_SUBSCRIPTION_STATUSES));
             })->where('uuid', $tenantUuid)->get(),
             TenancyPermissionConstants::PERMISSION_CREATE_SUBSCRIPTIONS
         )->first();

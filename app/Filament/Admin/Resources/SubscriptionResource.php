@@ -431,6 +431,10 @@ class SubscriptionResource extends Resource
                                         TextEntry::make('quantity')
                                             ->label(__('Quantity'))
                                             ->visible(fn (Subscription $record): bool => $record->plan->type === PlanType::SEAT_BASED->value),
+                                        TextEntry::make('comments')
+                                            ->label(__('Comments'))
+                                            ->html()
+                                            ->visible(fn (Subscription $record): bool => $record->comments !== null && $record->comments !== ''),
                                     ]),
                                 Section::make(__('Discount Details'))
                                     ->hidden(fn (Subscription $record): bool => $record->discounts->isEmpty() ||

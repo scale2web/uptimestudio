@@ -23,6 +23,7 @@ class Order extends Model
         'payment_provider_id',
         'tenant_id',
         'is_local',
+        'comments',
     ];
 
     public function user(): BelongsTo
