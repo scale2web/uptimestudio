@@ -6,7 +6,7 @@ use App\Models\User;
 
 class UserDashboardService
 {
-    public function getUserDashboardUrl(User $user)
+    public function getUserDashboardUrl(User $user): string
     {
         $tenant = $user->tenants()->orderByPivot('is_default', 'desc')->first();
 

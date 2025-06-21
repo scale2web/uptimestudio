@@ -65,7 +65,7 @@ class LoginController extends Controller
             return route('filament.admin.pages.dashboard');
         }
 
-        return route('filament.dashboard.pages.dashboard');
+        return route('dashboard');
     }
 
     protected function validateLogin(Request $request)
