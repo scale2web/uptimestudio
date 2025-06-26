@@ -33,6 +33,7 @@ class TenancySettings extends Component implements HasForms
     {
         $this->form->fill([
             'allow_tenant_invitations' => $this->configService->get('app.allow_tenant_invitations', false),
+            'tenant_multiple_subscriptions_enabled' => $this->configService->get('app.tenant_multiple_subscriptions_enabled', false),
         ]);
     }
 
@@ -46,6 +47,10 @@ class TenancySettings extends Component implements HasForms
                             ->label(__('Allow Tenant Invitations'))
                             ->helperText(__('If enabled, tenants users with an "admin" tenant role will be able to invite users to their tenant.'))
                             ->required(),
+                        Toggle::make('tenant_multiple_subscriptions_enabled')
+                            ->label(__('Allow Multiple Subscriptions Per Tenant'))
+                            ->helperText(__('If enabled, tenants will be able to have multiple subscriptions. If disabled, tenants can only have one active subscription at a time.'))
+                            ->required(),
                     ]),
 
             ])
@@ -57,6 +62,7 @@ class TenancySettings extends Component implements HasForms
         $data = $this->form->getState();
 
         $this->configService->set('app.allow_tenant_invitations', $data['allow_tenant_invitations']);
+        $this->configService->set('app.tenant_multiple_subscriptions_enabled', $data['tenant_multiple_subscriptions_enabled']);
 
         Notification::make()
             ->title(__('Settings Saved'))

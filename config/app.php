@@ -187,7 +187,7 @@ return [
 
     'recaptcha_enabled' => env('RECAPTCHA_ENABLED', false),
 
-    'multiple_subscriptions_enabled' => env('MULTIPLE_SUBSCRIPTIONS_ENABLED', false),
+    'tenant_multiple_subscriptions_enabled' => env('TENANT_MULTIPLE_SUBSCRIPTIONS_ENABLED', false),
 
     'two_factor_auth_enabled' => env('TWO_FACTOR_AUTH_ENABLED', true),
 

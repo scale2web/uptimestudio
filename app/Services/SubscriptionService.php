@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Constants\PaymentProviderConstants;
 use App\Constants\PlanType;
+use App\Constants\SubscriptionConstants;
 use App\Constants\SubscriptionStatus;
 use App\Constants\SubscriptionType;
 use App\Events\Subscription\InvoicePaymentFailed;
@@ -126,6 +127,10 @@ class SubscriptionService
 
     public function canCreateSubscription(int $tenantId): bool
     {
+        if (config('app.tenant_multiple_subscriptions_enabled')) {
+            return true;
+        }
+
         $notDeadSubscriptions = $this->findAllSubscriptionsThatAreNotDead($tenantId);
 
         return count($notDeadSubscriptions) === 0;
@@ -133,12 +138,9 @@ class SubscriptionService
 
     public function findAllSubscriptionsThatAreNotDead(int $tenantId): array
     {
-        return Subscription::where('tenant_id', $tenantId)
+        return Subscription::query()->where('tenant_id', $tenantId)
             ->where(function ($query) {
-                $query->where('status', SubscriptionStatus::ACTIVE->value)
-                    ->orWhere('status', SubscriptionStatus::PENDING->value)
-                    ->orWhere('status', SubscriptionStatus::PAUSED->value)
-                    ->orWhere('status', SubscriptionStatus::PAST_DUE->value);
+                $query->whereIn('status', SubscriptionConstants::SUBSCRIPTION_STATUS_THAT_ARE_NOT_DEAD);
             })
             ->get()
             ->toArray();
