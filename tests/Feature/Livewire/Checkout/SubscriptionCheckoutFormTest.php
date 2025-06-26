@@ -6,6 +6,7 @@ use App\Constants\PlanPriceType;
 use App\Constants\PlanType;
 use App\Constants\SessionConstants;
 use App\Constants\SubscriptionStatus;
+use App\Constants\TenancyPermissionConstants;
 use App\Dto\SubscriptionCheckoutDto;
 use App\Livewire\Checkout\SubscriptionCheckoutForm;
 use App\Models\Currency;
@@ -140,6 +141,162 @@ class SubscriptionCheckoutFormTest extends FeatureTest
         // assert order has been created
         $this->assertEquals($subscriptionsBefore + 1, Subscription::count());
         $this->assertEquals($tenantsBefore + 1, Tenant::count());
+    }
+
+    public function test_can_checkout_one_subscription_per_tenant_when_multiple_subscriptions_is_disabled()
+    {
+        config()->set('app.tenant_multiple_subscriptions_enabled', false);
+
+        $planSlug = 'plan-slug-'.rand(1, 1000000);
+
+        $plan = Plan::factory()->create([
+            'slug' => $planSlug,
+            'is_active' => true,
+        ]);
+
+        PlanPrice::create([
+            'plan_id' => $plan->id,
+            'currency_id' => Currency::where('code', 'USD')->first()->id,
+            'price' => 100,
+        ]);
+
+        $email = 'existing+'.rand(1, 1000000).'@gmail.com';
+
+        $tenant = $this->createTenant();
+        $user = $this->createUser($tenant, [
+            TenancyPermissionConstants::PERMISSION_CREATE_SUBSCRIPTIONS,
+        ], [
+            'email' => $email,
+            'password' => bcrypt('password'),
+            'name' => 'Name',
+        ]);
+
+        $sessionDto = new SubscriptionCheckoutDto;
+        $sessionDto->planSlug = $planSlug;
+        $sessionDto->tenantUuid = $tenant->uuid;
+
+        $this->withSession([SessionConstants::SUBSCRIPTION_CHECKOUT_DTO => $sessionDto]);
+
+        $existingSubscription = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'status' => SubscriptionStatus::ACTIVE->value,
+            'plan_id' => $plan->id,
+            'ends_at' => now(),
+            'tenant_id' => $tenant->id,
+        ]);
+
+        $paymentProvider = $this->addPaymentProvider();
+
+        $paymentProvider->shouldReceive('getSupportedPlanTypes')
+            ->andReturn([
+                PlanType::USAGE_BASED->value,
+                PlanType::FLAT_RATE->value,
+            ]);
+
+        $paymentProvider->shouldReceive('initSubscriptionCheckout')
+            ->once()
+            ->andReturn([]);
+
+        // get number of subscriptions before checkout
+        $subscriptionsBefore = Subscription::count();
+        $tenantsBefore = Tenant::count();
+
+        Livewire::test(SubscriptionCheckoutForm::class)
+            ->set('name', 'Name')
+            ->set('email', $email)
+            ->set('password', 'password')
+            ->set('paymentProvider', 'paymore')
+            ->call('checkout')
+            ->assertRedirect('http://paymore.com/checkout');
+
+        // assert user is logged in
+        $this->assertAuthenticated();
+
+        // assert order has been created
+        $this->assertEquals($subscriptionsBefore + 1, Subscription::count());
+        $this->assertEquals($tenantsBefore + 1, Tenant::count());
+
+        $sessionDto = session(SessionConstants::SUBSCRIPTION_CHECKOUT_DTO);
+
+        $this->assertNotEquals($existingSubscription->tenant_id, Subscription::find($sessionDto->subscriptionId)->tenant_id);
+    }
+
+    public function test_can_checkout_multiple_subscriptions_per_tenant_when_multiple_subscriptions_is_enabled()
+    {
+        config()->set('app.tenant_multiple_subscriptions_enabled', true);
+
+        $planSlug = 'plan-slug-'.rand(1, 1000000);
+
+        $plan = Plan::factory()->create([
+            'slug' => $planSlug,
+            'is_active' => true,
+        ]);
+
+        PlanPrice::create([
+            'plan_id' => $plan->id,
+            'currency_id' => Currency::where('code', 'USD')->first()->id,
+            'price' => 100,
+        ]);
+
+        $email = 'existing+'.rand(1, 1000000).'@gmail.com';
+
+        $tenant = $this->createTenant();
+        $user = $this->createUser($tenant, [
+            TenancyPermissionConstants::PERMISSION_CREATE_SUBSCRIPTIONS,
+        ], [
+            'email' => $email,
+            'password' => bcrypt('password'),
+            'name' => 'Name',
+        ]);
+
+        $sessionDto = new SubscriptionCheckoutDto;
+        $sessionDto->planSlug = $planSlug;
+        $sessionDto->tenantUuid = $tenant->uuid;
+
+        $this->withSession([SessionConstants::SUBSCRIPTION_CHECKOUT_DTO => $sessionDto]);
+
+        $existingSubscription = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'status' => SubscriptionStatus::ACTIVE->value,
+            'plan_id' => $plan->id,
+            'ends_at' => now(),
+            'tenant_id' => $tenant->id,
+        ]);
+
+        $paymentProvider = $this->addPaymentProvider();
+
+        $paymentProvider->shouldReceive('getSupportedPlanTypes')
+            ->andReturn([
+                PlanType::USAGE_BASED->value,
+                PlanType::FLAT_RATE->value,
+            ]);
+
+        $paymentProvider->shouldReceive('initSubscriptionCheckout')
+            ->once()
+            ->andReturn([]);
+
+        // get number of subscriptions before checkout
+        $subscriptionsBefore = Subscription::count();
+        $tenantsBefore = Tenant::count();
+
+        Livewire::test(SubscriptionCheckoutForm::class)
+            ->set('name', 'Name')
+            ->set('email', $email)
+            ->set('password', 'password')
+            ->set('paymentProvider', 'paymore')
+            ->call('checkout')
+            ->assertRedirect('http://paymore.com/checkout');
+
+        // assert user is logged in
+        $this->assertAuthenticated();
+
+        // assert order has been created
+        $this->assertEquals($subscriptionsBefore + 1, Subscription::count());
+        $this->assertEquals($tenantsBefore, Tenant::count());
+
+        $sessionDto = session(SessionConstants::SUBSCRIPTION_CHECKOUT_DTO);
+
+        $this->assertEquals($existingSubscription->tenant_id, Subscription::find($sessionDto->subscriptionId)->tenant_id);
     }
 
     public function test_can_checkout_existing_user_no_trial_if_user_is_not_eligible()

@@ -130,6 +130,7 @@ class ConfigConstants
         'invoices.seller.attributes.phone',
 
         'app.allow_tenant_invitations',
+        'app.tenant_multiple_subscriptions_enabled',
 
         // Cookie Consent
         'cookie-consent.enabled',

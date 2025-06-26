@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Constants\SubscriptionStatus;
+use App\Constants\SubscriptionConstants;
 use App\Constants\TenancyPermissionConstants;
 use App\Constants\TenantConstants;
 use App\Models\Tenant;
@@ -11,15 +11,6 @@ use Illuminate\Support\Str;
 
 class TenantCreationService
 {
-    private const DISALLOWED_TENANT_SUBSCRIPTION_STATUSES = [
-        SubscriptionStatus::NEW->value,
-        SubscriptionStatus::PENDING->value,
-        SubscriptionStatus::ACTIVE->value,
-        SubscriptionStatus::PAUSED->value,
-        SubscriptionStatus::PAST_DUE->value,
-        SubscriptionStatus::PENDING_USER_VERIFICATION->value,
-    ];
-
     public function __construct(
         private TenantPermissionService $tenantPermissionService,
     ) {}
@@ -54,9 +45,16 @@ class TenantCreationService
             return collect();
         }
 
+        if (config('app.tenant_multiple_subscriptions_enabled')) {
+            return $this->tenantPermissionService->filterTenantsWhereUserHasPermission(
+                $user->tenants()->get(),
+                TenancyPermissionConstants::PERMISSION_CREATE_SUBSCRIPTIONS
+            );
+        }
+
         return $this->tenantPermissionService->filterTenantsWhereUserHasPermission(
             $user->tenants()->whereDoesntHave('subscriptions', function ($query) {
-                $query->whereIn('status', self::DISALLOWED_TENANT_SUBSCRIPTION_STATUSES);
+                $query->whereIn('status', SubscriptionConstants::SUBSCRIPTION_STATUS_THAT_ARE_NOT_DEAD);
             })->get(),
             TenancyPermissionConstants::PERMISSION_CREATE_SUBSCRIPTIONS
         );
@@ -68,9 +66,17 @@ class TenantCreationService
             return null;
         }
 
+        if (config('app.tenant_multiple_subscriptions_enabled')) {
+            return $this->tenantPermissionService->filterTenantsWhereUserHasPermission(
+                $user->tenants()
+                    ->where('uuid', $tenantUuid)->get(),
+                TenancyPermissionConstants::PERMISSION_CREATE_SUBSCRIPTIONS
+            )->first();
+        }
+
         return $this->tenantPermissionService->filterTenantsWhereUserHasPermission(
             $user->tenants()->whereDoesntHave('subscriptions', function ($query) {
-                $query->whereIn('status', $query->whereIn('status', self::DISALLOWED_TENANT_SUBSCRIPTION_STATUSES));
+                $query->whereIn('status', SubscriptionConstants::SUBSCRIPTION_STATUS_THAT_ARE_NOT_DEAD);
             })->where('uuid', $tenantUuid)->get(),
             TenancyPermissionConstants::PERMISSION_CREATE_SUBSCRIPTIONS
         )->first();
