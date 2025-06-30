@@ -7,6 +7,7 @@ use App\Filament\Admin\Resources\UserResource\Pages\EditUser;
 use App\Models\User;
 use App\Services\TenantPermissionService;
 use App\Services\TenantService;
+use Filament\Facades\Filament;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -38,7 +39,7 @@ class UsersRelationManager extends RelationManager
                         return $tenantPermissionService->getTenantUserRoles($this->ownerRecord, $user)[0] ?? null;
                     })
                     ->options(function (TenantPermissionService $tenantPermissionService) {
-                        return $tenantPermissionService->getAllAvailableTenantRolesForDisplay();
+                        return $tenantPermissionService->getAllAvailableTenantRolesForDisplay(Filament::getTenant());
                     })
                     ->updateStateUsing(function (User $user, ?string $state, TenantPermissionService $tenantPermissionService) {
                         if ($state === null) {

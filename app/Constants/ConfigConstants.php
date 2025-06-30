@@ -129,8 +129,10 @@ class ConfigConstants
         'invoices.seller.attributes.vat',
         'invoices.seller.attributes.phone',
 
+        // tenancy
         'app.allow_tenant_invitations',
         'app.tenant_multiple_subscriptions_enabled',
+        'app.can_add_tenant_specific_roles_from_tenant_dashboard',
 
         // Cookie Consent
         'cookie-consent.enabled',

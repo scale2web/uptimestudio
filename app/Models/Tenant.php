@@ -53,4 +53,9 @@ class Tenant extends Model
 
         return $subscriptionService->getTenantSubscriptionProductMetadata($this);
     }
+
+    public function roles(): HasMany
+    {
+        return $this->hasMany(Role::class);
+    }
 }

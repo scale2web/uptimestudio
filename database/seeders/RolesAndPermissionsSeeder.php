@@ -80,6 +80,11 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::findOrCreate('delete announcements');
         Permission::findOrCreate('view announcements');
 
+        Permission::findOrCreate('create tenants');
+        Permission::findOrCreate('update tenants');
+        Permission::findOrCreate('delete tenants');
+        Permission::findOrCreate('view tenants');
+
         Permission::findOrCreate('view transactions');
 
         Permission::findOrCreate('update settings');
@@ -90,7 +95,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // give all permissions to admin that doesn't start with "tenancy:"
         $role->givePermissionTo(Permission::all()->filter(function ($permission) {
-            return str_starts_with($permission->name, TenancyPermissionConstants::TENANCY_ROLE_PREFIX) === false;
+            return str_starts_with($permission->name, TenancyPermissionConstants::TENANCY_PERMISSION_PREFIX) === false;
         }));
 
         $this->multiTenancyRolesAndPermissions();
@@ -119,10 +124,20 @@ class RolesAndPermissionsSeeder extends Seeder
             $tenancyPermissions[] = Permission::findOrCreate($permission);
         }
 
-        $adminRole = Role::findOrCreate(TenancyPermissionConstants::ROLE_ADMIN);
+        $adminRole = Role::query()->firstOrCreate([
+            'name' => TenancyPermissionConstants::ROLE_ADMIN,
+            'is_tenant_role' => true,
+        ], [
+            'guard_name' => 'web',
+        ]);
         $adminRole->givePermissionTo($tenancyPermissions);
 
-        $userRole = Role::findOrCreate(TenancyPermissionConstants::ROLE_USER);
+        $userRole = Role::query()->firstOrCreate([
+            'name' => TenancyPermissionConstants::ROLE_USER,
+            'is_tenant_role' => true,
+        ], [
+            'guard_name' => 'web',
+        ]);
 
         // assign any permissions that the user role should have here
     }

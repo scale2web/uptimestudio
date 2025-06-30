@@ -34,6 +34,7 @@ class TenancySettings extends Component implements HasForms
         $this->form->fill([
             'allow_tenant_invitations' => $this->configService->get('app.allow_tenant_invitations', false),
             'tenant_multiple_subscriptions_enabled' => $this->configService->get('app.tenant_multiple_subscriptions_enabled', false),
+            'can_add_tenant_specific_roles_from_tenant_dashboard' => $this->configService->get('app.can_add_tenant_specific_roles_from_tenant_dashboard', false),
         ]);
     }
 
@@ -51,6 +52,10 @@ class TenancySettings extends Component implements HasForms
                             ->label(__('Allow Multiple Subscriptions Per Tenant'))
                             ->helperText(__('If enabled, tenants will be able to have multiple subscriptions. If disabled, tenants can only have one active subscription at a time.'))
                             ->required(),
+                        Toggle::make('can_add_tenant_specific_roles_from_tenant_dashboard')
+                            ->label(__('Allow Adding Tenant Specific Roles from Tenant Dashboard'))
+                            ->helperText(__('If enabled, tenant admins can add roles that are specific to their tenant. If disabled, only tenant roles defined in the admin dashboard can be assigned to tenant users.'))
+                            ->required(),
                     ]),
 
             ])
@@ -63,6 +68,7 @@ class TenancySettings extends Component implements HasForms
 
         $this->configService->set('app.allow_tenant_invitations', $data['allow_tenant_invitations']);
         $this->configService->set('app.tenant_multiple_subscriptions_enabled', $data['tenant_multiple_subscriptions_enabled']);
+        $this->configService->set('app.can_add_tenant_specific_roles_from_tenant_dashboard', $data['can_add_tenant_specific_roles_from_tenant_dashboard']);
 
         Notification::make()
             ->title(__('Settings Saved'))

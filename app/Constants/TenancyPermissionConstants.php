@@ -4,13 +4,11 @@ namespace App\Constants;
 
 class TenancyPermissionConstants
 {
-    public const TENANCY_ROLE_PREFIX = 'tenancy:';
+    public const TENANCY_PERMISSION_PREFIX = 'tenancy:';
 
-    public const TENANCY_PERMISSION_PREFIX = self::TENANCY_ROLE_PREFIX;
+    public const ROLE_ADMIN = 'admin';
 
-    public const ROLE_ADMIN = 'tenancy:admin';
-
-    public const ROLE_USER = 'tenancy:user';
+    public const ROLE_USER = 'user';
 
     public const TENANT_CREATOR_ROLE = self::ROLE_ADMIN;
 
