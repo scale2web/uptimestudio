@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Constants\TenancyPermissionConstants;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -64,6 +63,12 @@ class TenantPermissionService
 
     public function assignTenantUserRole(Tenant $tenant, User $user, string $role): void
     {
+        $roleObject = $this->findTenantRole($tenant, $role);
+
+        if ($roleObject === null) {
+            throw new \InvalidArgumentException("Role '{$role}' does not exist for tenant '{$tenant->name}'.");
+        }
+
         $this->removeAllTenantUserRoles($tenant, $user);
         $user->tenants()->where('tenant_id', $tenant->id)->first()->pivot->assignRole($role);
     }
@@ -73,13 +78,32 @@ class TenantPermissionService
         $user->tenants()->where('tenant_id', $tenant->id)->first()->pivot->syncRoles([]);
     }
 
-    public function getAllAvailableTenantRolesForDisplay()
+    public function findTenantRole(Tenant $tenant, string $name): ?Role
     {
-        $roles = Role::where('name', 'like', TenancyPermissionConstants::TENANCY_ROLE_PREFIX.'%')->get()->pluck('name');
+        return Role::query()
+            ->where('name', $name)
+            ->where('is_tenant_role', true)
+            ->where(function ($query) use ($tenant) {
+                $query->whereNull('tenant_id')
+                    ->orWhere('tenant_id', $tenant->id);
+            })
+            ->first();
+    }
+
+    public function getAllAvailableTenantRolesForDisplay(Tenant $tenant): array
+    {
+        $roles = Role::query()
+            ->where('is_tenant_role', true)
+            ->where(function ($query) use ($tenant) {
+                $query->whereNull('tenant_id')
+                    ->orWhere('tenant_id', $tenant->id);
+            })
+            ->pluck('name')
+            ->toArray();
 
         $result = [];
         foreach ($roles as $role) {
-            $result[$role] = Str::of($role)->replace(TenancyPermissionConstants::TENANCY_ROLE_PREFIX, '')->replace('-', ' ')->title();
+            $result[$role] = Str::title($role);
         }
 
         return $result;

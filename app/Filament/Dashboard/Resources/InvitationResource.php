@@ -63,7 +63,7 @@ class InvitationResource extends Resource
                     ->maxLength(255),
                 Forms\Components\Select::make('role')
                     ->options(function (TenantPermissionService $tenantPermissionService) {
-                        return $tenantPermissionService->getAllAvailableTenantRolesForDisplay();
+                        return $tenantPermissionService->getAllAvailableTenantRolesForDisplay(Filament::getTenant());
                     })
                     ->default(TenancyPermissionConstants::ROLE_USER)
                     ->required()
@@ -90,8 +90,8 @@ class InvitationResource extends Resource
                         return $invitationStatusMapper->mapForDisplay($state);
                     }),
                 Tables\Columns\TextColumn::make('role')
-                    ->formatStateUsing(function ($state, $record) {
-                        return Str::of($state)->replace(TenancyPermissionConstants::TENANCY_ROLE_PREFIX, '')->replace('-', ' ')->title();
+                    ->formatStateUsing(function ($state) {
+                        return Str::of($state)->title();
                     })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('expires_at')

@@ -3,6 +3,9 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Constants\TenancyPermissionConstants;
+use App\Filament\Admin\Resources\RoleResource\Pages\CreateRole;
+use App\Filament\Admin\Resources\RoleResource\Pages\EditRole;
+use App\Filament\Admin\Resources\RoleResource\Pages\ListRoles;
 use App\Models\Permission;
 use App\Models\Role;
 use Filament\Forms;
@@ -10,6 +13,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class RoleResource extends Resource
@@ -30,21 +34,30 @@ class RoleResource extends Resource
                 Forms\Components\Section::make()->schema([
                     Forms\Components\TextInput::make('name')
                         ->required()
-                        ->helperText(__('The name of the role. Tenancy roles should start with ":prefix", and only tenancy permissions can be assigned to tenancy roles.', [
-                            'prefix' => TenancyPermissionConstants::TENANCY_ROLE_PREFIX,
-                        ]))
-                        ->disabled(fn (?Model $record) => $record && $record->name === 'admin')
-                        ->unique(ignoreRecord: true)
+                        ->helperText(__('The name of the role.'))
+                        ->disabled(fn (?Model $record) => $record && $record->name === 'admin' && ! $record->is_tenant_role)
                         ->maxLength(255),
+                    Forms\Components\Toggle::make('is_tenant_role')
+                        ->label(__('Is Tenant Role'))
+                        ->helperText(__('This role is used for tenant users. If checked, only tenancy permissions can be assigned to this role.'))
+                        ->default(false)
+                        ->disabledOn('edit')
+                        ->live()
+                        ->required(),
                     Forms\Components\Select::make('permissions')
-                        ->disabled(fn (?Model $record) => $record && $record->name === 'admin')
-                        ->relationship('permissions', 'name')
+                        ->disabled(fn (?Model $record) => $record && $record->name === 'admin' && ! $record->is_tenant_role)
+                        ->relationship('permissions', 'name',
+                            modifyQueryUsing: fn (Builder $query, Forms\Get $get) => $query->when($get('is_tenant_role'), function ($query) {
+                                $query->where('name', 'like', TenancyPermissionConstants::TENANCY_PERMISSION_PREFIX.'%');
+                            }, function ($query) {
+                                $query->where('name', 'not like', TenancyPermissionConstants::TENANCY_PERMISSION_PREFIX.'%');
+                            }))
                         ->rules([
                             fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
-                                $roleName = $get('name');
-                                if (str_starts_with($roleName, TenancyPermissionConstants::TENANCY_ROLE_PREFIX)) {
+
+                                if ($get('is_tenant_role')) {
                                     $failedPermissions = [];
-                                    Permission::whereIn('id', $value)->get()->each(function ($permission) use (&$failedPermissions) {
+                                    Permission::query()->whereIn('id', $value)->get()->each(function ($permission) use (&$failedPermissions) {
                                         if (! str_starts_with($permission->name, TenancyPermissionConstants::TENANCY_PERMISSION_PREFIX)) {
                                             $failedPermissions[] = $permission->name;
                                         }
@@ -52,13 +65,13 @@ class RoleResource extends Resource
 
                                     if (count($failedPermissions) > 0) {
                                         $fail(__('The following permissions are not allowed for tenancy roles -> :permissions', [
-                                            'prefix' => TenancyPermissionConstants::TENANCY_ROLE_PREFIX,
+                                            'prefix' => TenancyPermissionConstants::TENANCY_PERMISSION_PREFIX,
                                             'permissions' => implode(', ', $failedPermissions),
                                         ]));
                                     }
                                 } else {
                                     $failedPermissions = [];
-                                    Permission::whereIn('id', $value)->get()->each(function ($permission) use (&$failedPermissions) {
+                                    Permission::query()->whereIn('id', $value)->get()->each(function ($permission) use (&$failedPermissions) {
                                         if (str_starts_with($permission->name, TenancyPermissionConstants::TENANCY_PERMISSION_PREFIX)) {
                                             $failedPermissions[] = $permission->name;
                                         }
@@ -66,15 +79,15 @@ class RoleResource extends Resource
 
                                     if (count($failedPermissions) > 0) {
                                         $fail(__('The following permissions are not allowed for admin roles -> :permissions', [
-                                            'prefix' => TenancyPermissionConstants::TENANCY_ROLE_PREFIX,
+                                            'prefix' => TenancyPermissionConstants::TENANCY_PERMISSION_PREFIX,
                                             'permissions' => implode(', ', $failedPermissions),
                                         ]));
                                     }
                                 }
                             },
                         ])
-                        ->multiple()
                         ->preload()
+                        ->multiple()
                         ->helperText(__('Choose the permissions for this role. Tenancy permissions can only be assigned to tenancy roles.'))
                         ->placeholder(__('Select permissions...')),
                 ]),
@@ -87,6 +100,15 @@ class RoleResource extends Resource
             ->description(__('Manage the roles in your application. Roles that start with "tenancy:" are supposed to be used for multi-tenancy users to control user dashboard capabilities.'))
             ->columns([
                 Tables\Columns\TextColumn::make('name')->sortable()->searchable(),
+                Tables\Columns\IconColumn::make('is_tenant_role')
+                    ->label(__('Is Tenant Role'))
+                    ->sortable()
+                    ->boolean(),
+                Tables\Columns\TextColumn::make('tenant_id')
+                    ->getStateUsing(fn (Role $role) => $role->tenant?->name ?? __('-'))
+                    ->label(__('Tenant'))
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime(config('app.datetime_format'))->sortable(),
                 Tables\Columns\TextColumn::make('updated_at')
@@ -98,6 +120,9 @@ class RoleResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->with('tenant');
+            })
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
             ]);
@@ -113,9 +138,9 @@ class RoleResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \App\Filament\Admin\Resources\RoleResource\Pages\ListRoles::route('/'),
-            'create' => \App\Filament\Admin\Resources\RoleResource\Pages\CreateRole::route('/create'),
-            'edit' => \App\Filament\Admin\Resources\RoleResource\Pages\EditRole::route('/{record}/edit'),
+            'index' => ListRoles::route('/'),
+            'create' => CreateRole::route('/create'),
+            'edit' => EditRole::route('/{record}/edit'),
         ];
     }
 

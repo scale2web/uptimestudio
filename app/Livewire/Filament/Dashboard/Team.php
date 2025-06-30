@@ -43,7 +43,7 @@ class Team extends Component implements HasForms, HasTable
                         return $tenantPermissionService->getTenantUserRoles(Filament::getTenant(), $user)[0] ?? null;
                     })
                     ->options(function (TenantPermissionService $tenantPermissionService) {
-                        return $tenantPermissionService->getAllAvailableTenantRolesForDisplay();
+                        return $tenantPermissionService->getAllAvailableTenantRolesForDisplay(Filament::getTenant());
                     })
                     ->disabled(function (User $user) {
                         return $user->id === auth()->user()->id;

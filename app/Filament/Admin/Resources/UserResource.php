@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Constants\TenancyPermissionConstants;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\OrdersRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\SubscriptionsRelationManager;
 use App\Models\User;
@@ -57,7 +56,7 @@ class UserResource extends Resource
                     Forms\Components\Select::make('roles')
                         ->multiple()
                         ->relationship('roles', 'name', modifyQueryUsing: function ($query) {
-                            return $query->where('name', 'not like', TenancyPermissionConstants::TENANCY_ROLE_PREFIX.'%');
+                            return $query->where('is_tenant_role', false);
                         })
                         ->preload(),
                     Forms\Components\Checkbox::make('is_admin')
