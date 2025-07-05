@@ -51,7 +51,7 @@ class TransactionPolicy
      */
     public function update(User $user, Transaction $transaction): bool
     {
-        return true;
+        return $user->hasPermissionTo('update transactions') || $user->id === $transaction->user_id;
     }
 
     /**
@@ -59,7 +59,7 @@ class TransactionPolicy
      */
     public function delete(User $user, Transaction $transaction): bool
     {
-        return true;
+        return $user->hasPermissionTo('delete transactions');
     }
 
     /**
