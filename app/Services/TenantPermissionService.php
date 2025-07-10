@@ -70,7 +70,7 @@ class TenantPermissionService
         }
 
         $this->removeAllTenantUserRoles($tenant, $user);
-        $user->tenants()->where('tenant_id', $tenant->id)->first()->pivot->assignRole($role);
+        $user->tenants()->where('tenant_id', $tenant->id)->first()->pivot->assignRole($roleObject);
     }
 
     public function removeAllTenantUserRoles(Tenant $tenant, User $user): void
