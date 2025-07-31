@@ -45,9 +45,9 @@ class DashboardPanelProvider extends PanelProvider
                 MenuItem::make()
                     ->label(__('Admin Panel'))
                     ->visible(
-                        fn () => auth()->user()->isAdmin()
+                        fn() => auth()->user()->isAdmin()
                     )
-                    ->url(fn () => route('filament.admin.pages.dashboard'))
+                    ->url(fn() => route('filament.admin.pages.dashboard'))
                     ->icon('heroicon-s-cog-8-tooth'),
                 MenuItem::make()
                     ->label(__('Workspace Settings'))
@@ -63,19 +63,20 @@ class DashboardPanelProvider extends PanelProvider
                         }
                     )
                     ->icon('heroicon-s-cog-8-tooth')
-                    ->url(fn () => TenantSettings::getUrl()),
+                    ->url(fn() => TenantSettings::getUrl()),
                 MenuItem::make()
                     ->label(__('2-Factor Authentication'))
                     ->visible(
-                        fn () => config('app.two_factor_auth_enabled')
+                        fn() => config('app.two_factor_auth_enabled')
                     )
-                    ->url(fn () => TwoFactorAuth::getUrl())
+                    ->url(fn() => TwoFactorAuth::getUrl())
                     ->icon('heroicon-s-cog-8-tooth'),
             ])
             ->discoverResources(in: app_path('Filament/Dashboard/Resources'), for: 'App\\Filament\\Dashboard\\Resources')
             ->discoverPages(in: app_path('Filament/Dashboard/Pages'), for: 'App\\Filament\\Dashboard\\Pages')
             ->pages([
                 Pages\Dashboard::class,
+                \App\Filament\Dashboard\Pages\Settings::class,
             ])
             ->viteTheme('resources/css/filament/dashboard/theme.css')
             ->discoverWidgets(in: app_path('Filament/Dashboard/Widgets'), for: 'App\\Filament\\Dashboard\\Widgets')
@@ -102,24 +103,29 @@ class DashboardPanelProvider extends PanelProvider
                     ->label(__('Team'))
                     ->icon('heroicon-s-users')
                     ->collapsed(),
+                NavigationGroup::make()
+                    ->label(__('Settings'))
+                    ->icon('heroicon-s-cog-6-tooth')
+                    ->collapsed(),
             ])
-            ->renderHook(PanelsRenderHook::BODY_START,
-                fn (): string => Blade::render("@livewire('announcement.view', ['placement' => '".AnnouncementPlacement::USER_DASHBOARD->value."'])")
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                fn(): string => Blade::render("@livewire('announcement.view', ['placement' => '" . AnnouncementPlacement::USER_DASHBOARD->value . "'])")
             )
             ->authMiddleware([
                 Authenticate::class,
             ])->plugins([
-                BreezyCore::make()
-                    ->myProfile(
-                        shouldRegisterUserMenu: true, // Sets the 'account' link in the panel User Menu (default = true)
-                        shouldRegisterNavigation: false, // Adds a main navigation item for the My Profile page (default = false)
-                        hasAvatars: false, // Enables the avatar upload form component (default = false)
-                        slug: 'my-profile' // Sets the slug for the profile page (default = 'my-profile')
-                    )
-                    ->myProfileComponents([
-                        \App\Livewire\AddressForm::class,
-                    ]),
-            ])
+                    BreezyCore::make()
+                        ->myProfile(
+                            shouldRegisterUserMenu: true, // Sets the 'account' link in the panel User Menu (default = true)
+                            shouldRegisterNavigation: false, // Adds a main navigation item for the My Profile page (default = false)
+                            hasAvatars: false, // Enables the avatar upload form component (default = false)
+                            slug: 'my-profile' // Sets the slug for the profile page (default = 'my-profile')
+                        )
+                        ->myProfileComponents([
+                            \App\Livewire\AddressForm::class,
+                        ]),
+                ])
             ->tenantMenu()
             ->tenant(Tenant::class, 'uuid');
     }
