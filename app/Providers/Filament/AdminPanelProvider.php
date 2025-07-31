@@ -36,9 +36,9 @@ class AdminPanelProvider extends PanelProvider
                 MenuItem::make()
                     ->label(__('User Dashboard'))
                     ->visible(
-                        fn () => true
+                        fn() => true
                     )
-                    ->url(fn () => route('dashboard'))
+                    ->url(fn() => route('dashboard'))
                     ->icon('heroicon-s-face-smile'),
             ])
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')

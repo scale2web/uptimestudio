@@ -58,4 +58,44 @@ class Tenant extends Model
     {
         return $this->hasMany(Role::class);
     }
+
+    public function amFunctionalLocationLifecycleStates(): HasMany
+    {
+        return $this->hasMany(AmFunctionalLocationLifecycleState::class);
+    }
+
+    public function amFunctionalLocationLifecycleModels(): HasMany
+    {
+        return $this->hasMany(AmFunctionalLocationLifecycleModel::class);
+    }
+
+    public function amFunctionalLocationLifecycleStateSequences(): HasMany
+    {
+        return $this->hasMany(AmFunctionalLocationLifecycleStateSequence::class);
+    }
+
+    public function amAssetLifecycleStates(): HasMany
+    {
+        return $this->hasMany(AmAssetLifecycleState::class);
+    }
+
+    public function amAssetLifecycleModels(): HasMany
+    {
+        return $this->hasMany(AmAssetLifecycleModel::class);
+    }
+
+    public function amAssetLifecycleStateSequences(): HasMany
+    {
+        return $this->hasMany(AmAssetLifecycleStateSequence::class);
+    }
+
+    public function amAssetTypes(): HasMany
+    {
+        return $this->hasMany(AmAssetType::class);
+    }
+
+    public function amFunctionalLocationTypes(): HasMany
+    {
+        return $this->hasMany(AmFunctionalLocationType::class);
+    }
 }
