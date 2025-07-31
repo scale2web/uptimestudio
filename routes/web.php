@@ -35,11 +35,8 @@ Route::get('/dashboard', function (UserDashboardService $dashboardService) {
 
 Auth::routes();
 
-Route::get('/plan/start', function (
-    TenantCreationService $tenantCreationService,
-    SessionService $sessionService
-) {
-    if (! auth()->check()) {
+Route::get('/plan/start', function (TenantCreationService $tenantCreationService, SessionService $sessionService) {
+    if (!auth()->check()) {
         $sessionService->setCreateTenantForFreePlanUser(true);
     } else {
         $tenantCreationService->createTenantForFreePlanUser(auth()->user());
@@ -199,3 +196,44 @@ Route::controller(InvoiceController::class)
         Route::get('/generate/{transactionUuid}', 'generate')->name('invoice.generate');
         Route::get('/preview', 'preview')->name('invoice.preview');
     });
+
+// Functional Location Modal Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard/am-functional-locations/{record}/view-modal', function ($record) {
+        $location = \App\Models\AmFunctionalLocation::with(['parentLocation', 'childLocations', 'functionalLocationType', 'functionalLocationLifecycleState'])->findOrFail($record);
+        return view('filament.dashboard.resources.am-functional-location.modals.view-modal', [
+            'record' => $location
+        ]);
+    })->name('am-functional-location.view-modal');
+
+    Route::get('/dashboard/am-functional-locations/{record}/edit-modal', function ($record) {
+        $location = \App\Models\AmFunctionalLocation::findOrFail($record);
+        return view('filament.dashboard.resources.am-functional-location.modals.edit-modal', [
+            'record' => $location
+        ]);
+    })->name('am-functional-location.edit-modal');
+
+    Route::post('/dashboard/am-functional-locations/{record}/update-modal', function (Illuminate\Http\Request $request, $record) {
+        $location = \App\Models\AmFunctionalLocation::findOrFail($record);
+
+        $validated = $request->validate([
+            'functional_location' => 'required|string|max:255',
+            'description' => 'nullable|string|max:255',
+            'is_active' => 'boolean',
+            'installation_date' => 'nullable|date',
+            'am_parent_functional_location_id' => 'nullable|exists:am_functional_locations,id',
+            'superior_functional_location' => 'nullable|string|max:255',
+            'am_functional_location_type_id' => 'nullable|exists:am_functional_location_types,id',
+            'am_functional_location_lifecycle_state_id' => 'nullable|exists:am_functional_location_lifecycle_states,id',
+            'work_center' => 'nullable|string|max:255',
+            'company_code' => 'nullable|string|max:255',
+        ]);
+
+        // Handle checkbox
+        $validated['is_active'] = $request->has('is_active');
+
+        $location->update($validated);
+
+        return response()->json(['success' => true, 'message' => 'Functional location updated successfully']);
+    })->name('am-functional-location.update-modal');
+});
