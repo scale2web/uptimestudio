@@ -1,18 +1,29 @@
-    @if (!$this->search || $this->assetMatchesSearch($asset) || $this->hasMatchingChildren($asset))
-        <div class="asset-tree-node" style="margin-left: {{ $level * 20 }}px;">
-            <div
-                class="flex items-center space-x-2 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-150 {{ $this->assetMatchesSearch($asset) && $this->search ? 'bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-500' : '' }}">
-                <!-- Expand/Collapse Button -->
-                @if ($asset->children->count() > 0)
-                    <button wire:click="toggleNode({{ $asset->id }})"
-                        class="flex-shrink-0 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-transform duration-200 {{ $this->isExpanded($asset->id) ? 'rotate-90' : '' }}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                @else
-                    <div class="flex-shrink-0 w-6 h-6"></div>
-                @endif
+<?php
+/**
+ * Asset Tree Node Partial
+ * 
+ * This partial renders a single asset node in the tree view.
+ * It includes expand/collapse functionality, asset information,
+ * and action buttons for editing and viewing.
+ */
+?>
+
+@if (!$this->search || $this->assetMatchesSearch($asset) || $this->hasMatchingChildren($asset))
+    <div class="asset-tree-node" style="margin-left: {{ $level * 20 }}px;">
+        <div class="flex items-center space-x-2 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-150 {{ $this->assetMatchesSearch($asset) && $this->search ? 'bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-500' : '' }}">
+            
+            <!-- Expand/Collapse Button -->
+            @if ($asset->children->count() > 0)
+                <button wire:click="toggleNode({{ $asset->id }})"
+                    class="flex-shrink-0 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-transform duration-200 {{ $this->isExpanded($asset->id) ? 'rotate-90' : '' }}"
+                    title="{{ $this->isExpanded($asset->id) ? __('Collapse') : __('Expand') }}">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            @else
+                <div class="flex-shrink-0 w-6 h-6"></div>
+            @endif
 
                 <!-- Asset Icon -->
                 <div
@@ -68,12 +79,21 @@
                 <div class="flex-shrink-0 flex items-center space-x-1">
                     <button wire:click="openEditModal({{ $asset->id }})"
                         class="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                        title="{{ __('Edit Asset') }}">
+                        title="{{ __('Quick Edit') }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </button>
+                    <a href="{{ route('filament.dashboard.resources.a-m-assets.edit', ['tenant' => \Filament\Facades\Filament::getTenant()->uuid, 'record' => $asset->id]) }}"
+                        target="_blank"
+                        class="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                        title="{{ __('Full Edit (New Tab)') }}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </a>
                     <a href="{{ route('filament.dashboard.resources.a-m-assets.edit', ['tenant' => \Filament\Facades\Filament::getTenant()->uuid, 'record' => $asset->id]) }}"
                         class="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                         title="{{ __('View Asset') }}">

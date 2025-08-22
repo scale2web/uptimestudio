@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             VerificationProvidersSeeder::class,
             AmFunctionalLocationLifecycleStateSeeder::class,
             AMFunctionalLocationLifecycleModelSeeder::class,
+            AMWorkerGroupSeeder::class,
         ]);
     }
 }

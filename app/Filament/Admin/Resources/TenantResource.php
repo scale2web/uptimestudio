@@ -56,6 +56,10 @@ class TenantResource extends Resource
                     ->counts('users')
                     ->label(__('Users'))
                     ->sortable(),
+                Tables\Columns\TextColumn::make('am_worker_groups_count')
+                    ->counts('amWorkerGroups')
+                    ->label(__('Worker Groups'))
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('uuid')
                     ->label(__('UUID'))
                     ->searchable()
@@ -90,6 +94,7 @@ class TenantResource extends Resource
             RelationManagers\UsersRelationManager::class,
             RelationManagers\SubscriptionsRelationManager::class,
             RelationManagers\OrdersRelationManager::class,
+            RelationManagers\AmWorkerGroupsRelationManager::class,
         ];
     }
 

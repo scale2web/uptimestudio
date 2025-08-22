@@ -98,4 +98,19 @@ class Tenant extends Model
     {
         return $this->hasMany(AmFunctionalLocationType::class);
     }
+
+    public function amWorkerGroups(): HasMany
+    {
+        return $this->hasMany(AMWorkerGroup::class);
+    }
+
+    public function amWorkOrders(): HasMany
+    {
+        return $this->hasMany(AMWorkOrder::class);
+    }
+
+    public function amMaintenanceLifecycleStates(): HasMany
+    {
+        return $this->hasMany(AmMaintenanceLifecycleState::class);
+    }
 }
